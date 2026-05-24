@@ -921,18 +921,30 @@ def main():
         for cfg in output_configs.values():
             cfg["flow_packages"] = 1
 
-    # 逐号查询
-    results = []
-    for acct in accounts:
+    # I/O 密集型并发查询
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _worker(acct):
+        """单号查询 worker，返回 (phone, result)"""
         phone, pw = acct["phone"], acct["password"]
         if not pw:
-            results.append({"phone": phone, "error": "未配置服务密码"})
-            continue
+            return phone, {"phone": phone, "error": "未配置服务密码"}
         try:
             need_pkg = output_configs.get(phone, {}).get("flow_packages", 0) == 1
-            results.append(query_single(phone, pw, include_packages=need_pkg))
+            return phone, query_single(phone, pw, include_packages=need_pkg)
         except Exception as e:
-            results.append({"phone": phone, "error": str(e)})
+            return phone, {"phone": phone, "error": str(e)}
+
+    results = []
+    with ThreadPoolExecutor(max_workers=min(len(accounts), 8)) as executor:
+        futures = {executor.submit(_worker, acct): acct["phone"] for acct in accounts}
+        for future in as_completed(futures):
+            phone, result = future.result()
+            results.append(result)
+
+    # 按原顺序排列结果
+    phone_order = [a["phone"] for a in accounts]
+    results.sort(key=lambda r: phone_order.index(r.get("phone", "")))
 
     print(json.dumps(results, ensure_ascii=False, indent=2) if args.json
           else format_human_readable(results, output_configs))

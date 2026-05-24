@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  telecom-monitor:
+    build: .
+    container_name: telecom-monitor
+    restart: unless-stopped
+    volumes:
+      # 挂载配置文件（需自行创建 telecom_config.json）
+      - ./telecom_config.json:/app/telecom_config.json:ro
+      # 挂载数据目录（Token 缓存、失败计数）
+      - ./data:/app/data
+    # 默认运行查询
+    command: python telecom_query.py
+    # 如需调试，可改为：
+    # command: python telecom_query.py --phone 138xxxx1234 --password your_pwd
+    network_mode: "host"

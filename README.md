@@ -228,6 +228,24 @@ docker run --rm \
 0 8 * * * docker run --rm -v /path/to/your/config:/app/data telecom-monitor
 ```
 
+## 青龙面板适配
+
+详见 [QINGLONG.md](./QINGLONG.md)
+
+**核心优势：**
+
+电信脚本基于**纯 API 登录**，无需 Playwright 浏览器，比移动脚本更适合青龙面板环境。
+
+**快速步骤：**
+
+1. 在青龙「依赖管理」安装 `requests` `pycryptodome`
+2. 将 `telecom_query.py` 上传到青龙「脚本管理」
+3. 在同目录创建 `telecom_config.json`（参考 `telecom_config.example.json`）
+4. 在青龙「定时任务」中新建任务，命令填 `task telecom_query.py`
+
+> Token 缓存在 `data/tokens.json`，首次登录后后续直接复用，无需重复输入密码。  
+> 登录连续失败 5 次会自动停止，防止账号被风控锁定。
+
 ## 运行时文件
 
 脚本运行时会在数据目录下生成以下文件（已在 `.gitignore` 中排除）：
